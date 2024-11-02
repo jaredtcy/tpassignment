@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company A Alcohol Stock Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        /* Styles for the login form */
+        #loginForm {
+            display: none; /* Initially hidden */
+            max-width: 300px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            background-color: white;
+            border-radius: 8px;
+        }
+        #loginForm input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 5px 10px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        .brand-input, .quantity-input, .size-input {
+            width: 100px;
+            margin-right: 10px;
+        }
+        /* Chatbot styles */
+        #chatbot {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 300px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        #chatbotHeader {
+            background-color: #007BFF;
+            color: white;
+            padding: 10px;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+        #chatbotMessages {
+            height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+        #chatbotInput {
+            padding: 10px;
+            width: calc(100% - 50px);
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        #sendButton {
+            padding: 10px;
+            border: none;
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        #contactDetails {
+            margin-top: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div id="loginForm">
+    <h2>Login</h2>
+    <input type="text" id="username" placeholder="Username" required>
+    <input type="password" id="password" placeholder="Password" required>
+    <button onclick="login()">Login</button>
+    <div id="loginError" style="color: red; display: none;">Invalid credentials. Please try again.</div>
+</div>
+
+<div id="stockManagement" style="display: none;">
+    <h1>Company A Alcohol Stock Management</h1>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Brand</th>
+                <th>Size (ml)</th> <!-- New Size (ml) Column -->
+                <th>Quantity</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="stockTable">
+            <!-- Rows will be added dynamically here -->
+        </tbody>
+    </table>
+
+    <h2>Add New Brand</h2>
+    <input type="text" id="newBrand" class="brand-input" placeholder="Brand Name" required>
+    <input type="number" id="newSize" class="size-input" placeholder="Size (ml)" min="1 required"> <!-- New Size Input -->
+    <input type="number" id="newQuantity" class="quantity-input" placeholder="Quantity" min="1" required>
+    <button onclick="addBrand()">Add Brand</button>
+
+    <!-- Chatbot Button -->
+    <button onclick="toggleChatbot()">Chat with Support</button>
+
+    <!-- Chatbot Modal -->
+    <div id="chatbot">
+        <div id="chatbotHeader">Customer Support</div>
+        <div id="chatbotMessages"></div>
+        <input type="text" id="chatbotInput" placeholder="Type your message...">
+        <button id="sendButton" onclick="sendMessage()">Send</button>
+    </div>
+
+    <!-- Contact Details -->
+    <div id="contactDetails">
+        <h3>Contact Us</h3>
+        <p>Email: support@companyvendor.com</p>
+        <p>Phone: +6512343245</p>
+    </div>
+</div>
+
+<script>
+    let stockData = {};
+    
+    // Function to display the login form on page load
+    window.onload = function() {
+        document.getElementById('loginForm').style.display = 'block';
+    };
+
+    // Function to validate user credentials
+    function login() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        // Simple hardcoded credentials for demo purposes
+        const validUsername = 'admin';
+        const validPassword = 'password123';
+
+        if (username === validUsername && password === validPassword) {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('stockManagement').style.display = 'block';
+        } else {
+            document.getElementById('loginError').style.display = 'block';
+        }
+    }
+
+    function updateTable() {
+        const stockTable = document.getElementById('stockTable');
+        stockTable.innerHTML = ''; // Clear the table
+
+        for (const [brand, details] of Object.entries(stockData)) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${brand}</td>
+                <td>${details.size}</td> <!-- Display Size (ml) -->
+                <td>${details.quantity}</td>
+                <td>
+                    <button onclick="changeQuantity('${brand}', 1)">Add</button>
+                    <button onclick="changeQuantity('${brand}', -1)" ${details.quantity === 0 ? 'disabled' : ''}>Remove</button>
+                    <button onclick="deleteBrand('${brand}')">Delete</button>
+                </td>
+            `;
+            stockTable.appendChild(row);
+        }
+    }
+
+    function changeQuantity(brand, change) {
+        // Allow adding quantity regardless of current quantity
+        stockData[brand].quantity = (stockData[brand].quantity || 0) + change;
+
+        // Prevent negative quantities
+        if (stockData[brand].quantity < 0) stockData[brand].quantity = 0; 
+        updateTable();
+    }
+
+    function addBrand() {
+        const brand = document.getElementById('newBrand').value.trim();
+        const size = parseInt(document.getElementById('newSize').value, 10);
+        const quantity = parseInt(document.getElementById('newQuantity').value, 10);
+
+        // Ensure valid brand name, size, and quantity
+        if (brand && !isNaN(size) && size > 0 && !isNaN(quantity) && quantity > 0) {
+            // Initialize brand details if it doesn't exist
+            stockData[brand] = {
+                size: size,
+                quantity: (stockData[brand]?.quantity || 0) + quantity
+            };
+            updateTable();
+            // Clear input fields
+            document.getElementById('newBrand').value = '';
+            document.getElementById('newSize').value = '';
+            document.getElementById('newQuantity').value = '';
+        } else {
+            alert('Please enter a valid brand name, size (greater than 0), and quantity (greater than 0).');
+        }
+    }
+
+    function deleteBrand(brand) {
+        delete stockData[brand];
+        updateTable();
+    }
+
+    // Chatbot functions
+    function toggleChatbot() {
+        const chatbot = document.getElementById('chatbot');
+        chatbot.style.display = chatbot.style.display === 'none' || chatbot.style.display === '' ? 'block' : 'none';
+    }
+
+    function sendMessage() {
+        const input = document.getElementById('chatbotInput');
+        const message = input.value.trim();
+        if (message) {
+            const messagesDiv = document.getElementById('chatbotMessages');
+            messagesDiv.innerHTML += `<div>User: ${message}</div>`;
+            input.value = ''; // Clear the input
+            
+            // Simulate a response
+            setTimeout(() => {
+                messagesDiv.innerHTML += `<div>Support: Thank you for your message! How can I assist you?</div>`;
+                messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll to the bottom
+            }, 1000);
+        }
+    }
+</script>
+
+</body>
+</html>
